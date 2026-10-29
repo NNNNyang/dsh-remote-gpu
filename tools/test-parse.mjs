@@ -7,8 +7,8 @@ example-host
 ==DSHGPU backend==
 nvidia-smi
 ==DSHGPU gpus==
-0, Test GPU, 73, 51230, 81920
-1, Test GPU, 4, 1024, 81920
+0, Test GPU, 73, 6000, 16384
+1, Test GPU, 4, 1024, 16384
 ==DSHGPU temp==
 0, 61
 1, 38
