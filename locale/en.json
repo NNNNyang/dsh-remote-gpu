@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Remote GPU",
+    "description": "Live GPU utilization of the server dsh-remote is connected to: per-GPU compute load, memory usage and temperature."
+  }
+}

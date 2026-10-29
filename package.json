@@ -1,0 +1,47 @@
+{
+  "name": "@local/dsh-remote-gpu",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shows how many GPUs on the dsh-remote host are free, with per-GPU utilization, memory, temperature and the owning user.",
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "gpu",
+    "nvidia",
+    "remote",
+    "monitoring"
+  ],
+  "homepage": "https://github.com/NNNNyang/dsh-remote-gpu",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NNNNyang/dsh-remote-gpu.git"
+  },
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib",
+    "cordis.patch.yml",
+    "locale",
+    "icon.svg"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  }
+}
