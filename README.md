@@ -10,8 +10,8 @@ credential handling, and no extra dependency.
 
 | Seat | What it shows |
 | --- | --- |
-| Conversation header chip | `空闲 3/8` — **only how many remote GPUs are free** (colour-coded: green = all free, amber = some free, red = none). Click it to open the panel for the details. The tooltip also lists the users currently on the GPU box (`占用 alice×2, bob×1`). |
-| Right sidebar tab `远程显卡` | Every GPU of the remote host in detail: name, utilization %, memory used/total, temperature, **the user who owns the task running on it** (`占用 alice×1`), a `空闲` tag on the free cards, plus a sparkline of the last 90 samples. |
+| Conversation header chip | `空闲 {idle}/{total}` — **only how many remote GPUs are free** (colour-coded: green = all free, amber = some free, red = none). Click it to open the panel for the details. The tooltip also lists the users currently on the GPU box (`占用 <user>×<n>`). |
+| Right sidebar tab `远程显卡` | Every GPU of the remote host in detail: name, utilization %, memory used/total, temperature, **the user who owns the task running on it** (`占用 <user>×<n>`), a `空闲` tag on the free cards, plus a sparkline of recent samples. |
 | Settings → `远程显卡` | Probe status, remote host, backend, idle count, refresh interval, the exact probe command, a "refresh now" button, the per-GPU process list (user · command · pid · memory) and an "active users" summary. |
 | Host tool `remote_gpu` | The same snapshot as text, so the agent can read it directly. |
 
@@ -28,10 +28,10 @@ with every sample, so the chip, the panel and the `remote_gpu` tool always
 agree on the same number.
 
 ```
-Remote host gpu-host — nvidia-smi
-Idle GPUs: 3/8 (util < 10%, memory < 5%)
-GPU 0 NVIDIA A100 · util 0% · memory 12/40960 MiB · temp 31°C · idle
-GPU 5 NVIDIA A100 · util 87% · memory 38012/40960 MiB · temp 62°C · users alice×1
+Remote host <host> — <backend>
+Idle GPUs: <idle>/<total> (util < 10%, memory < 5%)
+GPU <index> <name> · util <n>% · memory <used>/<total> MiB · temp <n>°C · idle
+GPU <index> <name> · util <n>% · memory <used>/<total> MiB · temp <n>°C · users <user>×<n>
 ```
 
 ## Who is using each GPU
@@ -39,12 +39,12 @@ GPU 5 NVIDIA A100 · util 87% · memory 38012/40960 MiB · temp 62°C · users a
 Every GPU card names the owner of the task that runs on it:
 
 ```
-GPU 5 · NVIDIA A100
-87%   37.1GiB/40.0GiB   93%   62 °C   占用 alice×1
+GPU <index> · <name>
+<util>%   <used>/<total>   <mem%>   <temp> °C   占用 <user>×<n>
 ```
 
-The panel header adds the overall count (`8 张显卡 · 空闲 3 张 · 2 个用户`), and
-the chip tooltip summarises the same thing. On NVIDIA servers the probe adds
+The panel header adds the overall count (`<total> 张显卡 · 空闲 <idle> 张 · <users> 个用户`),
+and the chip tooltip summarises the same thing. On NVIDIA servers the probe adds
 three extra sections to the command:
 
 ```sh
@@ -63,7 +63,7 @@ those tools do not expose per-process GPU ownership.
 Every reading eases into place instead of snapping:
 
 - one shared `requestAnimationFrame` loop drives all tweens, so a panel with
-  eight GPUs still costs a single frame callback;
+  many GPUs still costs a single frame callback;
 - utilization, memory and temperature glide to their new value over ~520 ms
   (`TWEEN_MS` in `client.js`);
 - the utilization and memory bars, the sparkline line and the chip dot morph
@@ -129,6 +129,6 @@ from `@deepseek-ai/*`.
 
 ## Layout
 
-Eight GPUs fit into the right sidebar without scrolling: one card is ~79 px tall
-(compact paddings, a single-line footer, a 5 px utilization bar and a 3 px memory
-bar) and the panel scrolls for servers with more GPUs.
+One card is ~79 px tall (compact paddings, a single-line footer, a 5 px
+utilization bar and a 3 px memory bar), so a full node fits into the right
+sidebar without scrolling; the panel scrolls when there are more GPUs than fit.

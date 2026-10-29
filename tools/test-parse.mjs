@@ -3,12 +3,12 @@
 import { parseGpuOutput, splitSections } from '../lib/gpu-parse.js'
 
 const nvidia = `==DSHGPU host==
-gpu-node-01
+example-host
 ==DSHGPU backend==
 nvidia-smi
 ==DSHGPU gpus==
-0, NVIDIA A100-SXM4-80GB, 73, 51230, 81920
-1, NVIDIA A100-SXM4-80GB, 4, 1024, 81920
+0, Test GPU, 73, 51230, 81920
+1, Test GPU, 4, 1024, 81920
 ==DSHGPU temp==
 0, 61
 1, 38
