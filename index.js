@@ -236,37 +236,46 @@ export function apply(ctx, config) {
     const callId = `dsh-remote-gpu-${Date.now().toString(36)}-${callSeq}`
     inFlight = (async () => {
       try {
-        const result = await ctx.tools.execute({
-          callId,
-          name: 'rw_exec',
-          arguments: {
-            command: settings.command,
-            // `rw_exec` promotes a timed-out command to a background job by
-            // default, and that path calls `jobs.start({ owner: agent?.id })`.
-            // This probe has no agent, so the job registry refuses the owner and
-            // the whole call fails with "background jobs unavailable". A probe is
-            // a bounded foreground command, so opt out of promotion entirely.
-            promoteOnTimeout: false,
-            // Fail the call ourselves rather than inheriting a longer budget.
-            timeoutMs: Math.min(600000, Math.max(1000, settings.commandTimeoutMs)),
-          },
-          // `parent` marks the call as nested, which keeps it alive under the
-          // PTC presentation mode; it has no other meaning for the registry.
-          parent: 'dsh-remote-gpu',
-          // Required by the registry: it fuses and reads `signal.aborted`.
+        // The tools service now takes a batch: `calls` with a JSON-string
+        // `arguments` per call, settling to `{ results: [{ callId, result }] }`
+        // where each result is the materialized tool result (content blocks).
+        // The previous single-call shape made `calls` undefined and the batch
+        // scheduler failed with "Tool batch execution failed".
+        const batch = await ctx.tools.execute({
+          calls: [
+            {
+              id: callId,
+              name: 'rw_exec',
+              arguments: JSON.stringify({
+                command: settings.command,
+                // `rw_exec` promotes a timed-out command to a background job by
+                // default, and that path calls `jobs.start({ owner: agent?.id })`.
+                // This probe has no agent, so the job registry refuses the owner and
+                // the whole call fails with "background jobs unavailable". A probe is
+                // a bounded foreground command, so opt out of promotion entirely.
+                promoteOnTimeout: false,
+                // Fail the call ourselves rather than inheriting a longer budget.
+                timeoutMs: Math.min(600000, Math.max(1000, settings.commandTimeoutMs)),
+              }),
+            },
+          ],
+          // Required by the registry: the batch scheduler reads `signal.aborted`.
           signal: abort.signal,
         })
+        const result = batch?.results?.[0]?.result
         if (!result || result.isError) {
-          const raw = result?.error?.message ?? result?.content?.[0]?.text ?? 'unknown error'
-          const failure = describeFailure(raw)
+          const caused = result?.error?.message
+            ?? batch?.results?.[0]?.result?.error?.message
+            ?? result?.content?.[0]?.text
+            ?? 'unknown error'
+          const failure = describeFailure(caused)
           state.status = 'error'
           state.error = failure.message
           state.hint = failure.hint
           state.updatedAt = Date.now()
           return
         }
-        const value = result?.value ?? {}
-        const text = typeof value.text === 'string' ? value.text : ''
+        const text = typeof result.content?.[0]?.text === 'string' ? result.content[0].text : ''
         const parsed = parseGpuOutput(text)
         state.status = 'ok'
         state.host = parsed.host
@@ -283,7 +292,11 @@ export function apply(ctx, config) {
         state.updatedAt = Date.now()
         pushHistory()
       } catch (error) {
-        const failure = describeFailure(error instanceof Error ? error.message : String(error))
+        // The batch executor wraps scheduler failures in a generic
+        // "Tool batch execution failed"; the real reason is on `cause`.
+        const own = error instanceof Error ? error.message : String(error)
+        const cause = error?.cause instanceof Error ? error.cause.message : null
+        const failure = describeFailure(cause ? `${own} (${cause})` : own)
         state.status = 'error'
         state.error = failure.message
         state.hint = failure.hint
